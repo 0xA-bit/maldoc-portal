@@ -524,6 +524,9 @@ td.case-id-cell span { color:var(--accent); }
     <div class="result-body" id="resultBody"></div>
   </div>
 
+  <!-- Analysis Results Panel -->
+  <div id="analysisPanel" style="display:none;margin-top:16px"></div>
+
 </div>
 
 <!-- ════════════════════════════════
@@ -596,8 +599,8 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── hardcoded config (analysts never see this) ──
-const CASES_ENDPOINT  = 'https://mesbieto.app.n8n.cloud/webhook/get-cases';
-const SUBMIT_ENDPOINT = 'https://mesbieto.app.n8n.cloud/webhook-test/maldoc-triage';
+const CASES_ENDPOINT  = 'http://localhost:5678/webhook/get-cases';
+const SUBMIT_ENDPOINT = 'http://localhost:5678/webhook/maldoc-triage';
 
 // ── tab switching ──
 function switchTab(tab, btn) {
@@ -692,6 +695,7 @@ async function submitFile() {
   document.getElementById('submitBtn').disabled = true;
   document.getElementById('progWrap').classList.add('show');
   document.getElementById('resultBox').classList.remove('show');
+  document.getElementById('analysisPanel').style.display = 'none';
   document.getElementById('logOut').innerHTML = '';
 
   const pb = document.getElementById('progBg');
@@ -728,19 +732,19 @@ async function submitFile() {
     try { pretty = JSON.stringify(JSON.parse(txt), null, 2); } catch { pretty = txt; }
 
     if (res.ok) {
-      addLog('ok', `HTTP ${res.status} — received by pipeline`);
-      addLog('ok', `case ${currentCaseId} is now in queue`);
-      document.getElementById('progLbl').textContent = 'Delivered';
-      document.getElementById('resultStatus').className = 'result-status ok';
-      document.getElementById('resultStatus').textContent = `✓ CASE ${currentCaseId} SUBMITTED`;
-      regenCase(); // auto-generate next case ID ready
+      addLog('ok', `HTTP ${res.status} — analysis complete`);
+      document.getElementById('progLbl').textContent = 'Analysis complete';
+      let parsed = {};
+      try { parsed = JSON.parse(txt); } catch {}
+      renderResults(parsed);
+      regenCase();
     } else {
       addLog('err', `HTTP ${res.status}`);
       document.getElementById('resultStatus').className = 'result-status err';
       document.getElementById('resultStatus').textContent = `✕ ERROR HTTP ${res.status}`;
+      document.getElementById('resultBody').textContent = pretty || '(no body)';
+      document.getElementById('resultBox').classList.add('show');
     }
-    document.getElementById('resultBody').textContent = pretty || '(no body)';
-    document.getElementById('resultBox').classList.add('show');
   } catch(err) {
     pb.classList.remove('spin');
     addLog('err', err.message);
@@ -752,6 +756,104 @@ async function submitFile() {
   }
 
   document.getElementById('submitBtn').disabled = false;
+}
+
+// ── render analysis results ──
+function renderResults(d) {
+  const verdict = (d.verdict || 'unknown').toLowerCase();
+  const vtMal   = parseInt(d.vtMalicious)  || 0;
+  const vtSusp  = parseInt(d.vtSuspicious) || 0;
+  const vtUnd   = parseInt(d.vtUndetected) || 0;
+  const vtTotal = parseInt(d.vtTotal)      || (vtMal + vtSusp + vtUnd);
+  const vtScore = vtTotal > 0 ? `${vtMal}/${vtTotal}` : '0/0';
+
+  let vColor = '#2aff8f'; let vBorder = '#2aff8f';
+  if (verdict === 'malicious')  { vColor = '#e84242'; vBorder = '#e84242'; }
+  if (verdict === 'suspicious') { vColor = '#ffb830'; vBorder = '#ffb830'; }
+
+  // parse mraptor verdict
+  let mraptorVerdict = 'clean';
+  let mraptorColor   = '#2aff8f';
+  const mr = (d.mraptor || '').toUpperCase();
+  if (mr.includes('MALICIOUS'))  { mraptorVerdict = 'MALICIOUS';  mraptorColor = '#e84242'; }
+  else if (mr.includes('SUSPICIOUS')) { mraptorVerdict = 'SUSPICIOUS'; mraptorColor = '#ffb830'; }
+  else if (mr.includes('ERROR'))      { mraptorVerdict = 'N/A (not OLE)'; mraptorColor = '#3d5568'; }
+  else if (mr.includes('NOT SUSPICIOUS')) { mraptorVerdict = 'NOT SUSPICIOUS'; }
+
+  // parse oleid file format
+  const oleidMatch = (d.oleid || '').match(/File format\s+\|\s*([^\|]+)\|/);
+  const fileFormat = oleidMatch ? oleidMatch[1].trim() : 'unknown';
+
+  // parse oleid macros
+  const macroMatch = (d.oleid || '').match(/VBA Macros\s+\|\s*([^\|]+)\|/);
+  const vbaMacros  = macroMatch ? macroMatch[1].trim() : 'unknown';
+
+  const panel = document.getElementById('analysisPanel');
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div class="sec-label" style="margin-top:0">analysis results</div>
+
+    <!-- verdict banner -->
+    <div style="background:#0d1117;border:1px solid ${vBorder};border-left:3px solid ${vBorder};padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
+      <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:${vColor}">${verdict.toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-family:var(--mono);font-size:11px;color:#fff">${d.filename || '—'}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">Case: ${d.caseId || '—'}</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:13px;color:${vColor};border:1px solid ${vBorder};padding:4px 12px">${vtScore} engines</div>
+    </div>
+
+    <!-- hashes + VT -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="card" style="padding:14px;margin-bottom:0">
+        <div class="sec-label" style="margin-top:0;font-size:9px">file hashes</div>
+        <div style="font-family:var(--mono);font-size:10px;line-height:2;color:var(--muted)">
+          <div><span style="color:var(--text)">MD5&nbsp;&nbsp;&nbsp;</span> ${d.md5 || '—'}</div>
+          <div><span style="color:var(--text)">SHA1&nbsp;&nbsp;</span> ${d.sha1 || '—'}</div>
+          <div style="word-break:break-all"><span style="color:var(--text)">SHA256</span> ${d.sha256 || '—'}</div>
+        </div>
+      </div>
+      <div class="card" style="padding:14px;margin-bottom:0">
+        <div class="sec-label" style="margin-top:0;font-size:9px">virustotal</div>
+        <div style="font-family:var(--mono);font-size:11px;line-height:2;color:var(--muted)">
+          <div><span style="color:#e84242">Malicious&nbsp;&nbsp;</span>${vtMal}</div>
+          <div><span style="color:#ffb830">Suspicious&nbsp;</span>${vtSusp}</div>
+          <div><span style="color:#2aff8f">Undetected&nbsp;</span>${vtUnd}</div>
+          <div><span style="color:var(--text)">Tags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>${d.vtTags || '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- oletools -->
+    <div class="card" style="padding:14px;margin-bottom:10px">
+      <div class="sec-label" style="margin-top:0;font-size:9px">oletools analysis</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Mraptor</div>
+          <div style="font-family:var(--mono);font-size:12px;color:${mraptorColor}">${mraptorVerdict}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">File format</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${fileFormat}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">VBA macros</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${vbaMacros}</div>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Oleid raw output</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre;overflow-x:auto;max-height:160px;overflow-y:auto;line-height:1.6">${(d.oleid||'no data').replace(/</g,'&lt;')}</div>
+    </div>
+
+    <!-- olevba -->
+    <div class="card" style="padding:14px;margin-bottom:0">
+      <div class="sec-label" style="margin-top:0;font-size:9px">olevba raw output</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre-wrap;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${(d.olevba||'no data').replace(/</g,'&lt;')}</div>
+    </div>
+  `;
+
+  // scroll to results
+  panel.scrollIntoView({ behavior: 'smooth' });
 }
 
 // ── dashboard / case loader ──
