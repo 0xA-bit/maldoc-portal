@@ -791,6 +791,69 @@ async function submitFile() {
   document.getElementById('submitBtn').disabled = false;
 }
 
+// ── format oletools output ──
+function formatOleid(raw) {
+  if (!raw) return 'no data';
+  // restore newlines from spaces where separator lines are
+  const restored = raw
+    .replace(/--------------------\+/g, '\n--------------------+')
+    .replace(/Indicator\s+\|/g, '\nIndicator           |')
+    .replace(/File format\s+\|/g, '\nFile format         |')
+    .replace(/Container format\s+\|/g, '\nContainer format    |')
+    .replace(/Encrypted\s+\|/g, '\nEncrypted           |')
+    .replace(/VBA Macros\s+\|/g, '\nVBA Macros          |')
+    .replace(/XLM Macros\s+\|/g, '\nXLM Macros          |')
+    .replace(/External\s+\|/g, '\nExternal            |')
+    .replace(/Relationships\s+\|/g, '\nRelationships       |')
+    .replace(/Filename:/g, '\nFilename:')
+    .trim();
+  return restored.replace(/</g,'&lt;');
+}
+
+function formatOlevba(raw) {
+  if (!raw) return 'no data';
+  try {
+    // extract JSON part
+    const jsonStart = raw.indexOf('[');
+    if (jsonStart === -1) return raw.replace(/</g,'&lt;');
+    const jsonStr = raw.slice(jsonStart);
+    const data = JSON.parse(jsonStr);
+    const results = [];
+    for (const item of data) {
+      if (item.type === 'MetaInformation') continue;
+      if (item.type === 'error') {
+        results.push(`ERROR: ${item.message}`);
+        continue;
+      }
+      if (item.macros && item.macros.length > 0) {
+        results.push(`File: ${item.file}`);
+        results.push(`Type: ${item.type}`);
+        results.push(`Macros found: ${item.macros.length}`);
+        for (const m of item.macros) {
+          if (m.code && m.code !== 'file0') {
+            results.push(`\nMacro code:\n${m.code}`);
+          }
+        }
+        if (item.analysis && item.analysis.length > 0) {
+          results.push('\nSuspicious keywords:');
+          for (const a of item.analysis) {
+            results.push(`  [${a.type}] ${a.keyword} — ${a.description}`);
+          }
+        } else {
+          results.push('No suspicious keywords found.');
+        }
+      } else {
+        results.push(`File: ${item.file || '—'}`);
+        results.push(`Type: ${item.type || '—'}`);
+        results.push('No macros found.');
+      }
+    }
+    return results.join('\n').replace(/</g,'&lt;') || 'No macro content.';
+  } catch(e) {
+    return raw.replace(/</g,'&lt;');
+  }
+}
+
 // ── render analysis results ──
 function renderResults(d) {
   console.log('renderResults called with:', d);
@@ -889,13 +952,13 @@ function renderResults(d) {
         </div>
       </div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Oleid raw output</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${(d.oleid||'no data').replace(/</g,'&lt;')}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${formatOleid(d.oleid||'')}</div>
     </div>
 
     <!-- olevba -->
     <div class="card" style="padding:14px;margin-bottom:0">
       <div class="sec-label" style="margin-top:0;font-size:9px">olevba raw output</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre-wrap;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${(d.olevba||'no data').replace(/</g,'&lt;')}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre-wrap;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${formatOlevba(d.olevba||'')}</div>
     </div>
   `;
 
