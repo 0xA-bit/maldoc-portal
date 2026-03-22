@@ -735,7 +735,17 @@ async function submitFile() {
       addLog('ok', `HTTP ${res.status} — analysis complete`);
       document.getElementById('progLbl').textContent = 'Analysis complete';
       let parsed = {};
-      try { parsed = JSON.parse(txt); } catch {}
+      try {
+        const clean = txt.trim().replace(/^\uFEFF/, '');
+        parsed = JSON.parse(clean);
+        console.log('Response parsed:', parsed);
+        addLog('ok', `verdict: ${parsed.verdict || 'unknown'}`);
+        addLog('ok', `sha256: ${parsed.sha256 ? parsed.sha256.slice(0,16) + '...' : 'none'}`);
+      } catch(e) {
+        console.error('JSON parse failed:', e);
+        console.log('Raw response:', txt);
+        addLog('err', 'JSON parse failed — check console');
+      }
       renderResults(parsed);
       regenCase();
     } else {
