@@ -3,1098 +3,703 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Maldoc Triage Portal</title>
+<title>Maldoc Triage</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 :root {
-  --bg:       #080b0e;
-  --bg2:      #0d1117;
-  --bg3:      #111820;
-  --border:   #1a2535;
-  --border2:  #243040;
-  --accent:   #e84242;
-  --accent2:  #ff6b35;
-  --green:    #2aff8f;
-  --blue:     #38b6ff;
-  --amber:    #ffb830;
-  --text:     #c0d0de;
-  --muted:    #3d5568;
-  --mono:     'Share Tech Mono', monospace;
-  --ui:       'Rajdhani', sans-serif;
+  --bg:      #080b0e;
+  --bg2:     #0d1117;
+  --bg3:     #111820;
+  --border:  #1a2535;
+  --border2: #243040;
+  --accent:  #e84242;
+  --green:   #2aff8f;
+  --blue:    #38b6ff;
+  --amber:   #ffb830;
+  --text:    #c0d0de;
+  --muted:   #3d5568;
+  --mono:    'Share Tech Mono', monospace;
 }
 
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--ui);
+  font-family: var(--mono);
   min-height: 100vh;
-  padding: 0;
   overflow-x: hidden;
 }
 
 body::before {
   content:'';
-  position:fixed;
-  inset:0;
+  position:fixed; inset:0;
   background-image:
-    linear-gradient(rgba(26,37,53,0.5) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26,37,53,0.5) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events:none;
-  z-index:0;
+    linear-gradient(rgba(26,37,53,0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26,37,53,0.4) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none; z-index:0;
 }
 
-/* ── top nav ── */
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(8,11,14,0.92);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 32px;
-  height: 52px;
-  gap: 0;
+nav {
+  position:sticky; top:0; z-index:100;
+  background:rgba(8,11,14,0.95);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 28px; height:48px;
 }
 
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-right: 32px;
+.logo {
+  font-size:13px; color:#fff;
+  letter-spacing:.12em; margin-right:28px;
+  display:flex; align-items:center; gap:8px;
 }
+.logo-dot { width:8px; height:8px; background:var(--accent); box-shadow:0 0 6px var(--accent); }
 
-.nav-logo-icon {
-  width: 28px; height: 28px;
-  border: 1px solid var(--accent);
-  display: flex; align-items: center; justify-content: center;
+.tabs { display:flex; height:100%; }
+.tab {
+  height:100%; padding:0 18px;
+  font-family:var(--mono); font-size:11px;
+  letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); background:none; border:none;
+  border-bottom:2px solid transparent;
+  cursor:pointer; transition:color .2s, border-color .2s;
 }
+.tab:hover { color:var(--text); }
+.tab.active { color:#fff; border-bottom-color:var(--accent); }
 
-.nav-logo-text {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: #fff;
-  letter-spacing: 0.1em;
+.nav-right { margin-left:auto; display:flex; align-items:center; gap:14px; font-size:11px; }
+.status { display:flex; align-items:center; gap:6px; color:var(--green); }
+.status::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.clock { color:var(--muted); }
+
+.page { display:none; padding:28px; max-width:900px; margin:0 auto; position:relative; z-index:1; }
+.page.active { display:block; }
+
+.slabel {
+  font-size:10px; color:var(--accent);
+  letter-spacing:.18em; text-transform:uppercase;
+  margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
 }
+.slabel::after { content:''; flex:1; height:1px; background:var(--border); }
 
-.nav-tabs {
-  display: flex;
-  height: 100%;
-  gap: 0;
-}
+.card { background:var(--bg2); border:1px solid var(--border2); padding:20px; margin-bottom:14px; }
 
-.nav-tab {
-  height: 100%;
-  padding: 0 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-  display: flex; align-items: center; gap: 7px;
-}
-
-.nav-tab:hover { color: var(--text); }
-.nav-tab.active { color: #fff; border-bottom-color: var(--accent); }
-
-.nav-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.nav-status {
-  display: flex; align-items: center; gap: 6px;
-  color: var(--green);
-}
-
-.nav-status::before {
-  content:'';
-  width:6px; height:6px;
-  border-radius:50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-  animation: blink 2s ease-in-out infinite;
-}
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-.nav-time {
-  color: var(--muted);
-  min-width: 70px;
-  text-align: right;
-}
-
-/* ── page ── */
-.page { display: none; padding: 32px; max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
-.page.active { display: block; }
-
-/* ── section label ── */
-.sec-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--accent);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  display: flex; align-items: center; gap: 10px;
-}
-.sec-label::after { content:''; flex:1; height:1px; background: var(--border); }
-
-/* ── card ── */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  padding: 24px;
-  margin-bottom: 16px;
-}
-
-/* ── case ID banner ── */
 .case-banner {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-left: 3px solid var(--accent);
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  background:var(--bg3); border:1px solid var(--border2);
+  border-left:3px solid var(--accent);
+  padding:12px 16px; display:flex; align-items:center; gap:14px; margin-bottom:18px;
 }
+.case-label { font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+.case-id { font-size:18px; color:#fff; letter-spacing:.08em; flex:1; }
+.case-id span { color:var(--accent); }
+.regen { background:none; border:1px solid var(--border2); color:var(--muted); font-family:var(--mono); font-size:10px; padding:4px 10px; cursor:pointer; transition:all .2s; }
+.regen:hover { border-color:var(--accent); color:var(--accent); }
 
-.case-banner-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.case-id-display {
-  font-family: var(--mono);
-  font-size: 17px;
-  color: #fff;
-  letter-spacing: 0.08em;
-  flex: 1;
-}
-
-.case-id-display span { color: var(--accent); }
-
-.regen-btn {
-  background: none;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 5px 12px;
-  cursor: pointer;
-  letter-spacing: 0.08em;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-.regen-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ── dropzone ── */
 .dropzone {
-  border: 1.5px dashed var(--border2);
-  padding: 36px 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
+  border:1.5px dashed var(--border2); padding:32px 20px;
+  text-align:center; cursor:pointer; transition:all .2s; position:relative;
 }
-.dropzone:hover, .dropzone.over { border-color: var(--accent); background: rgba(232,66,66,0.03); }
+.dropzone:hover,.dropzone.over { border-color:var(--accent); background:rgba(232,66,66,.03); }
 .dropzone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-title { font-size:14px; color:#fff; margin-bottom:4px; }
+.drop-sub { font-size:11px; color:var(--muted); }
+.ftypes { display:flex; justify-content:center; gap:5px; flex-wrap:wrap; margin-top:10px; }
+.ftype { font-size:10px; padding:1px 6px; border:1px solid var(--border2); color:var(--muted); }
 
-.drop-icon { width:44px; height:44px; border:1px solid var(--border2); margin:0 auto 12px; display:flex; align-items:center; justify-content:center; transition: border-color 0.2s; }
-.dropzone:hover .drop-icon { border-color: var(--accent); }
-.drop-title { font-size:15px; font-weight:600; color:#fff; margin-bottom:5px; }
-.drop-sub { font-family:var(--mono); font-size:11px; color:var(--muted); line-height:1.7; }
-
-.ftags { display:flex; justify-content:center; gap:5px; flex-wrap:wrap; margin-top:12px; }
-.ftag { font-family:var(--mono); font-size:10px; padding:2px 7px; border:1px solid var(--border2); color:var(--muted); }
-
-.file-row { display:none; margin-top:14px; background:var(--bg3); border:1px solid var(--border2); padding:11px 14px; align-items:center; gap:12px; }
-.file-row.show { display:flex; }
-.ficon { width:30px; height:30px; border:1px solid var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:9px; color:var(--accent); flex-shrink:0; }
-.fname { font-family:var(--mono); font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.fsize { font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px; }
-.fremove { background:none; border:1px solid var(--border2); color:var(--muted); cursor:pointer; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.2s; margin-left:auto; flex-shrink:0; }
+.fpreview { display:none; margin-top:12px; background:var(--bg3); border:1px solid var(--border2); padding:10px 14px; align-items:center; gap:10px; }
+.fpreview.show { display:flex; }
+.fext { width:28px; height:28px; border:1px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--accent); flex-shrink:0; }
+.fname { font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fsize { font-size:11px; color:var(--muted); margin-top:2px; }
+.fremove { background:none; border:1px solid var(--border2); color:var(--muted); cursor:pointer; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:13px; margin-left:auto; flex-shrink:0; transition:all .2s; }
 .fremove:hover { border-color:var(--accent); color:var(--accent); }
 
-/* ── fields ── */
-.fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.field { display:flex; flex-direction:column; gap:5px; }
-.field.full { grid-column:1/-1; }
-.field label { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
-.field input, .field select, .field textarea {
-  background:var(--bg3); border:1px solid var(--border2); color:var(--text);
-  font-family:var(--mono); font-size:12px; padding:9px 11px; outline:none; width:100%;
-  transition:border-color 0.2s;
-}
-.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); }
-.field select option { background:var(--bg2); }
-.field textarea { resize:vertical; min-height:64px; }
-
-/* ── submit ── */
 .submit-btn {
-  width:100%; padding:13px; background:var(--accent); border:none; color:#fff;
-  font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase;
-  cursor:pointer; margin-top:18px; transition:background 0.2s, opacity 0.2s;
-  display:flex; align-items:center; justify-content:center; gap:9px;
+  width:100%; padding:12px; background:var(--accent); border:none;
+  color:#fff; font-family:var(--mono); font-size:12px;
+  letter-spacing:.12em; text-transform:uppercase;
+  cursor:pointer; margin-top:14px; transition:background .2s, opacity .2s;
 }
 .submit-btn:hover:not(:disabled) { background:#c43232; }
 .submit-btn:disabled { opacity:.35; cursor:not-allowed; }
 
-/* ── progress ── */
-.prog-wrap { display:none; margin-top:14px; background:var(--bg3); border:1px solid var(--border2); padding:14px 16px; }
-.prog-wrap.show { display:block; }
-.prog-top { font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; }
-.prog-bg { height:2px; background:var(--border2); overflow:hidden; }
+.prog { display:none; margin-top:12px; background:var(--bg3); border:1px solid var(--border2); padding:12px 14px; }
+.prog.show { display:block; }
+.prog-top { font-size:11px; color:var(--muted); margin-bottom:7px; display:flex; justify-content:space-between; }
+.prog-track { height:2px; background:var(--border2); overflow:hidden; }
 .prog-fill { height:100%; background:var(--accent); width:0%; transition:width .3s; }
-.prog-bg.spin .prog-fill { width:35%; animation:spin 1s ease-in-out infinite; }
-@keyframes spin { 0%{transform:translateX(-100%)} 100%{transform:translateX(400%)} }
-.log { margin-top:10px; font-family:var(--mono); font-size:11px; color:var(--muted); line-height:1.9; max-height:100px; overflow-y:auto; }
-.log .ll { display:flex; gap:8px; }
-.log .lt { color:var(--border2); flex-shrink:0; }
-.log .lok { color:var(--green); }
-.log .lerr { color:var(--accent); }
-.log .linfo { color:var(--blue); }
+.prog-track.spin .prog-fill { width:35%; animation:sp 1s ease-in-out infinite; }
+@keyframes sp { 0%{transform:translateX(-100%)} 100%{transform:translateX(400%)} }
+.logbox { margin-top:8px; font-size:11px; color:var(--muted); line-height:1.9; max-height:80px; overflow-y:auto; }
+.ll { display:flex; gap:8px; }
+.lt { color:var(--border2); flex-shrink:0; }
+.lok { color:var(--green); }
+.lerr { color:var(--accent); }
+.linfo { color:var(--blue); }
 
-/* ── result ── */
-.result { display:none; margin-top:14px; background:var(--bg2); border:1px solid var(--border2); padding:16px 20px; }
-.result.show { display:block; }
-.result-status { font-family:var(--mono); font-size:12px; font-weight:600; margin-bottom:8px; }
-.result-status.ok { color:var(--green); }
-.result-status.err { color:var(--accent); }
-.result-body { font-family:var(--mono); font-size:11px; color:var(--muted); white-space:pre-wrap; word-break:break-all; line-height:1.7; max-height:160px; overflow-y:auto; background:var(--bg3); padding:10px; border:1px solid var(--border); }
+/* ── RESULTS ── */
+#results { display:none; margin-top:14px; }
 
-/* ── DASHBOARD ── */
-.dash-header {
-  display:flex; align-items:center; gap:12px; margin-bottom:24px;
+.verdict-banner {
+  display:flex; align-items:center; gap:16px;
+  padding:16px 18px; margin-bottom:14px;
+  border:1px solid; border-left-width:4px;
+  background:rgba(0,0,0,.5);
 }
-.dash-title { font-family:var(--mono); font-size:16px; color:#fff; letter-spacing:.06em; }
-.dash-count { font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:auto; }
+.v-label { font-size:24px; font-weight:700; letter-spacing:.06em; }
+.v-file { font-size:12px; color:#fff; margin-bottom:3px; }
+.v-case { font-size:10px; color:var(--muted); }
+.v-score { font-size:13px; padding:4px 12px; border:1px solid; }
 
-.refresh-btn {
-  background:none; border:1px solid var(--border2); color:var(--muted);
-  font-family:var(--mono); font-size:10px; padding:6px 14px; cursor:pointer;
-  letter-spacing:.08em; transition:all 0.2s; display:flex; align-items:center; gap:6px;
+/* result tables */
+.rtable { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:0; }
+.rtable th {
+  text-align:left; padding:8px 12px;
+  font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); border-bottom:1px solid var(--border2);
+  background:var(--bg3); font-weight:400;
 }
+.rtable td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+.rtable tr:last-child td { border-bottom:none; }
+.rtable td:first-child { color:var(--muted); white-space:nowrap; width:160px; }
+.rtable td:last-child { color:var(--text); word-break:break-all; }
+
+.risk-high { color:#e84242; }
+.risk-med  { color:#ffb830; }
+.risk-low  { color:#2aff8f; }
+.risk-none { color:var(--muted); }
+
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+
+.section-title {
+  font-size:10px; color:var(--accent);
+  letter-spacing:.15em; text-transform:uppercase;
+  padding:10px 12px; border-bottom:1px solid var(--border2);
+  background:var(--bg3);
+}
+
+.kw-item { display:flex; gap:8px; padding:7px 12px; border-bottom:1px solid var(--border); font-size:11px; }
+.kw-item:last-child { border-bottom:none; }
+.kw-type { min-width:90px; flex-shrink:0; }
+.kw-keyword { color:#fff; min-width:120px; flex-shrink:0; }
+.kw-desc { color:var(--muted); }
+
+.raw-box {
+  font-size:10px; color:var(--muted);
+  background:var(--bg3); padding:12px;
+  white-space:pre; overflow-x:auto;
+  max-height:200px; overflow-y:auto;
+  line-height:1.7; border-top:1px solid var(--border2);
+}
+
+/* dashboard */
+.dash-header { display:flex; align-items:center; margin-bottom:20px; }
+.dash-title { font-size:14px; color:#fff; letter-spacing:.06em; }
+.refresh-btn { background:none; border:1px solid var(--border2); color:var(--muted); font-family:var(--mono); font-size:10px; padding:5px 12px; cursor:pointer; letter-spacing:.08em; transition:all .2s; margin-left:auto; }
 .refresh-btn:hover { border-color:var(--blue); color:var(--blue); }
-.refresh-btn.spinning svg { animation: rotateSpin 0.8s linear infinite; }
-@keyframes rotateSpin { to { transform: rotate(360deg); } }
 
+.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:14px; }
+.stat { background:var(--bg2); padding:12px 14px; }
+.stat-label { font-size:9px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px; }
+.stat-val { font-size:18px; color:#fff; }
+.c-red { color:var(--accent); } .c-grn { color:var(--green); } .c-amb { color:var(--amber); } .c-blu { color:var(--blue); }
 
-
-/* stats row */
-.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:16px; }
-.stat-cell { background:var(--bg2); padding:14px 16px; }
-.stat-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:5px; }
-.stat-val { font-family:var(--mono); font-size:20px; color:#fff; }
-.stat-val.red { color:var(--accent); }
-.stat-val.green { color:var(--green); }
-.stat-val.amber { color:var(--amber); }
-.stat-val.blue { color:var(--blue); }
-
-/* table */
 .tbl-wrap { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
-thead tr { border-bottom:1px solid var(--border2); }
-th { padding:10px 14px; text-align:left; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; font-weight:400; white-space:nowrap; }
-tbody tr { border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; }
-tbody tr:hover { background:rgba(255,255,255,0.03); }
-td { padding:11px 14px; color:var(--text); vertical-align:middle; }
-td.case-id-cell { color:#fff; letter-spacing:.05em; }
-td.case-id-cell span { color:var(--accent); }
-.verdict-badge {
-  display:inline-block; padding:2px 9px; font-size:10px; letter-spacing:.08em;
-  text-transform:uppercase; border:1px solid;
-}
-.verdict-badge.malicious { border-color:var(--accent); color:var(--accent); background:rgba(232,66,66,0.08); }
-.verdict-badge.clean { border-color:var(--green); color:var(--green); background:rgba(42,255,143,0.07); }
-.verdict-badge.suspicious { border-color:var(--amber); color:var(--amber); background:rgba(255,184,48,0.08); }
-.verdict-badge.pending { border-color:var(--muted); color:var(--muted); }
+table.cases { width:100%; border-collapse:collapse; font-size:11px; }
+table.cases thead tr { border-bottom:1px solid var(--border2); }
+table.cases th { padding:8px 12px; text-align:left; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; font-weight:400; white-space:nowrap; }
+table.cases tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+table.cases tbody tr:hover { background:rgba(255,255,255,.03); }
+table.cases td { padding:9px 12px; color:var(--text); vertical-align:middle; }
 
-.vt-score { display:flex; align-items:center; gap:5px; }
-.vt-bar-bg { width:48px; height:4px; background:var(--border2); }
-.vt-bar-fill { height:100%; background:var(--accent); }
+.badge { display:inline-block; padding:1px 8px; font-size:10px; letter-spacing:.06em; text-transform:uppercase; border:1px solid; }
+.badge.malicious { border-color:var(--accent); color:var(--accent); }
+.badge.suspicious { border-color:var(--amber); color:var(--amber); }
+.badge.clean { border-color:var(--green); color:var(--green); }
+.badge.pending { border-color:var(--muted); color:var(--muted); }
 
-.rule-chips { display:flex; gap:4px; flex-wrap:wrap; }
-.rule-chip { font-size:10px; padding:1px 7px; border:1px solid var(--border2); color:var(--muted); }
-.rule-chip.has { border-color:var(--blue); color:var(--blue); }
-
-.empty-state {
-  text-align:center; padding:48px 24px; font-family:var(--mono); font-size:12px; color:var(--muted);
-  border:1px dashed var(--border2); margin-top:8px; line-height:2;
-}
-
-/* modal */
-.modal-overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
-  z-index:200; align-items:center; justify-content:center; padding:24px;
-}
-.modal-overlay.show { display:flex; }
-.modal {
-  background:var(--bg2); border:1px solid var(--border2);
-  width:100%; max-width:640px; max-height:80vh; overflow-y:auto;
-  position:relative;
-}
-.modal-header {
-  padding:18px 22px; border-bottom:1px solid var(--border2);
-  display:flex; align-items:center; gap:12px;
-}
-.modal-title { font-family:var(--mono); font-size:13px; color:#fff; letter-spacing:.06em; flex:1; }
-.modal-close { background:none; border:1px solid var(--border2); color:var(--muted); width:28px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
-.modal-close:hover { border-color:var(--accent); color:var(--accent); }
-.modal-body { padding:22px; }
-.modal-row { margin-bottom:14px; }
-.modal-row-label { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; margin-bottom:5px; }
-.modal-row-val { font-family:var(--mono); font-size:12px; color:var(--text); line-height:1.7; word-break:break-all; }
-.modal-row-val.code { background:var(--bg3); border:1px solid var(--border); padding:10px 12px; white-space:pre-wrap; font-size:11px; max-height:160px; overflow-y:auto; }
+.empty { text-align:center; padding:40px; font-size:11px; color:var(--muted); line-height:2; }
 
 @media(max-width:600px){
-  .fields { grid-template-columns:1fr; }
-  .stats-row { grid-template-columns:1fr 1fr; }
-  .page { padding:16px; }
-}
-
-.auto-badge {
-  font-size: 9px; padding: 1px 6px; letter-spacing: .1em;
-  border: 1px solid #38b6ff; color: #38b6ff;
-  background: rgba(56,182,255,.08);
-}
-.auto-badge.manual {
-  border-color: #ffb830; color: #ffb830;
-  background: rgba(255,184,48,.08);
-}
-.field-hint {
-  font-family: var(--mono); font-size: 10px;
-  color: var(--muted); margin-top: 4px; line-height: 1.5;
+  .two-col { grid-template-columns:1fr; }
+  .stats { grid-template-columns:1fr 1fr; }
+  .rtable td:first-child { width:110px; }
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-logo">
-    <div class="nav-logo-icon">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e84242" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-        <path d="M2 17l10 5 10-5"/>
-        <path d="M2 12l10 5 10-5"/>
-      </svg>
-    </div>
-    <span class="nav-logo-text">MALDOC_TRIAGE</span>
-  </div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('submit', this)">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Submit File
-    </button>
-    <button class="nav-tab" onclick="switchTab('dashboard', this)">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      Case Tracker
-    </button>
+<nav>
+  <div class="logo"><div class="logo-dot"></div>MALDOC_TRIAGE</div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('submit',this)">Submit File</button>
+    <button class="tab" onclick="showTab('tracker',this)">Case Tracker</button>
   </div>
   <div class="nav-right">
-    <div class="nav-status">PIPELINE ONLINE</div>
-    <div class="nav-time" id="navTime">00:00:00</div>
+    <div class="status">ONLINE</div>
+    <div class="clock" id="clock">00:00:00</div>
   </div>
 </nav>
 
-<!-- ════════════════════════════════
-     PAGE: SUBMIT
-════════════════════════════════ -->
+<!-- ══ SUBMIT ══ -->
 <div class="page active" id="page-submit">
 
-  <!-- Auto Case ID -->
-  <div class="sec-label">case identification</div>
+  <div class="slabel">case identification</div>
   <div class="case-banner">
-    <div class="case-banner-label">Auto Case ID</div>
-    <div class="case-id-display" id="caseIdDisplay"><span>TRG</span>-........</div>
-    <button class="regen-btn" onclick="regenCase()">↻ NEW</button>
+    <div class="case-label">Auto Case ID</div>
+    <div class="case-id" id="caseId"><span>TRG</span>-........</div>
+    <button class="regen" onclick="newCase()">↻ NEW</button>
   </div>
 
-  <!-- Upload -->
-  <div class="sec-label">file ingestion</div>
+  <div class="slabel">file upload</div>
   <div class="card">
     <div class="dropzone" id="dropzone">
-      <input type="file" id="fileInput" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.pdf,.vbs,.js,.hta,.ps1,.exe,.dll,.zip,.7z"/>
-      <div class="drop-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3d5568" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-      </div>
-      <div class="drop-title">Drop suspicious file here</div>
-      <div class="drop-sub">or click to browse · max 32MB</div>
-      <div class="ftags">
-        <span class="ftag">.doc</span><span class="ftag">.docx</span><span class="ftag">.xls</span>
-        <span class="ftag">.xlsx</span><span class="ftag">.pdf</span><span class="ftag">.rtf</span>
-        <span class="ftag">.vbs</span><span class="ftag">.ps1</span><span class="ftag">.hta</span>
+      <input type="file" id="fileInput" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.pdf,.vbs,.ps1,.hta,.js,.exe,.zip,.7z"/>
+      <div class="drop-title">Drop suspicious file here or click to browse</div>
+      <div class="drop-sub">max 32MB · supported formats below</div>
+      <div class="ftypes">
+        <span class="ftype">.doc</span><span class="ftype">.docx</span>
+        <span class="ftype">.xls</span><span class="ftype">.xlsx</span>
+        <span class="ftype">.ppt</span><span class="ftype">.pptx</span>
+        <span class="ftype">.pdf</span><span class="ftype">.rtf</span>
+        <span class="ftype">.vbs</span><span class="ftype">.ps1</span>
       </div>
     </div>
-    <div class="file-row" id="fileRow">
-      <div class="ficon" id="fext">DOC</div>
+    <div class="fpreview" id="fpreview">
+      <div class="fext" id="fext">?</div>
       <div style="flex:1;min-width:0">
         <div class="fname" id="fname">—</div>
         <div class="fsize" id="fsize">—</div>
       </div>
       <button class="fremove" id="fremove">✕</button>
     </div>
-  </div>
-
-  <!-- Config -->
-  <div class="sec-label">analyst config</div>
-  <div class="card">
-    <div class="fields">
-      <div class="field full">
-        <label>Analyst name</label>
-        <input type="text" id="analystName" placeholder="e.g. Juan Santos"/>
-      </div>
-
-      <div class="field">
-        <label style="display:flex;align-items:center;gap:6px;">
-          Threat type
-          <span class="auto-badge" id="threatTypeBadge">AUTO</span>
-        </label>
-        <select id="threatType" onchange="markOverride('threatType')">
-          <option value="unknown" selected>Unknown — pipeline will classify</option>
-          <option value="maldoc">Maldoc — Office macro</option>
-          <option value="phishing">Phishing attachment</option>
-          <option value="dropper">Dropper</option>
-          <option value="ransomware">Ransomware</option>
-          <option value="infostealer">Infostealer</option>
-          <option value="trojan">Trojan / Backdoor</option>
-          <option value="pua">Potentially unwanted</option>
-          <option value="other">Other</option>
-        </select>
-        <span class="field-hint">Will be auto-set from VT category + oletools verdict</span>
-      </div>
-
-      <div class="field">
-        <label style="display:flex;align-items:center;gap:6px;">
-          Priority
-          <span class="auto-badge" id="priorityBadge">AUTO</span>
-        </label>
-        <select id="priority" onchange="markOverride('priority')">
-          <option value="medium" selected>Medium — pipeline will assign</option>
-          <option value="low">Low</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
-        </select>
-        <span class="field-hint">Will be auto-set from VT detection ratio</span>
-      </div>
-
-      <div class="field full">
-        <label>Context / notes</label>
-        <textarea id="notes" placeholder="e.g. Received via phishing email targeting finance dept."></textarea>
-      </div>
-    </div>
-    <button class="submit-btn" id="submitBtn" onclick="submitFile()" disabled>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <button class="submit-btn" id="submitBtn" onclick="doSubmit()" disabled>
       SUBMIT FOR ANALYSIS
     </button>
   </div>
 
-  <!-- Progress + Result -->
-  <div class="prog-wrap" id="progWrap">
-    <div class="prog-top"><span id="progLbl">Uploading...</span><span id="progPct">...</span></div>
-    <div class="prog-bg spin" id="progBg"><div class="prog-fill" id="progFill"></div></div>
-    <div class="log" id="logOut"></div>
-  </div>
-  <div class="result" id="resultBox">
-    <div class="result-status" id="resultStatus"></div>
-    <div class="result-body" id="resultBody"></div>
+  <div class="prog" id="prog">
+    <div class="prog-top"><span id="progLbl">Analyzing...</span><span id="progPct">...</span></div>
+    <div class="prog-track spin" id="progTrack"><div class="prog-fill" id="progFill"></div></div>
+    <div class="logbox" id="logbox"></div>
   </div>
 
-  <!-- Analysis Results Panel -->
-  <div id="analysisPanel" style="display:none;margin-top:16px"></div>
+  <div id="results"></div>
 
 </div>
 
-<!-- ════════════════════════════════
-     PAGE: DASHBOARD
-════════════════════════════════ -->
-<div class="page" id="page-dashboard">
-
+<!-- ══ TRACKER ══ -->
+<div class="page" id="page-tracker">
   <div class="dash-header">
     <div class="dash-title">CASE TRACKER</div>
-    <button class="refresh-btn" id="refreshBtn" onclick="loadCases()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-      REFRESH
-    </button>
-    <span class="dash-count" id="dashCount">0 cases loaded</span>
+    <button class="refresh-btn" onclick="loadCases()">↻ REFRESH</button>
   </div>
-
-  <!-- Stats -->
-  <div class="sec-label">summary</div>
-  <div class="stats-row">
-    <div class="stat-cell"><div class="stat-label">Total cases</div><div class="stat-val blue" id="statTotal">0</div></div>
-    <div class="stat-cell"><div class="stat-label">Malicious</div><div class="stat-val red" id="statMalicious">0</div></div>
-    <div class="stat-cell"><div class="stat-label">Clean</div><div class="stat-val green" id="statClean">0</div></div>
-    <div class="stat-cell"><div class="stat-label">Pending</div><div class="stat-val amber" id="statPending">0</div></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val c-blu" id="sTotal">0</div></div>
+    <div class="stat"><div class="stat-label">Malicious</div><div class="stat-val c-red" id="sMal">0</div></div>
+    <div class="stat"><div class="stat-label">Clean</div><div class="stat-val c-grn" id="sClean">0</div></div>
+    <div class="stat"><div class="stat-label">Pending</div><div class="stat-val c-amb" id="sPend">0</div></div>
   </div>
-
-  <!-- Table -->
-  <div class="sec-label">all cases</div>
-  <div class="card" style="padding:0;overflow:hidden;">
+  <div class="slabel">all cases</div>
+  <div class="card" style="padding:0;overflow:hidden">
     <div class="tbl-wrap">
-      <table id="caseTable">
-        <thead>
-          <tr>
-            <th>Case ID</th>
-            <th>Filename</th>
-            <th>Analyst</th>
-            <th>Submitted</th>
-            <th>Verdict</th>
-            <th>Threat type</th>
-            <th>Priority</th>
-            <th>VT Score</th>
-            <th>Rules</th>
-          </tr>
-        </thead>
+      <table class="cases">
+        <thead><tr><th>Case ID</th><th>Filename</th><th>Submitted</th><th>Verdict</th><th>VT Score</th><th>File Type</th></tr></thead>
         <tbody id="caseBody">
-          <tr><td colspan="9"><div class="empty-state">Loading cases...<br><span style="color:var(--muted)">If nothing appears, check that the pipeline is running.</span></div></td></tr>
+          <tr><td colspan="6"><div class="empty">No cases yet. Submit a file to get started.</div></td></tr>
         </tbody>
       </table>
     </div>
   </div>
-
-</div>
-
-<!-- ── CASE DETAIL MODAL ── -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal" id="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="modalTitle">Case Details</div>
-      <button class="modal-close" onclick="closeModalDirect()">✕</button>
-    </div>
-    <div class="modal-body" id="modalBody"></div>
-  </div>
 </div>
 
 <script>
-// ── clock ──
-function updateClock() {
-  document.getElementById('navTime').textContent = new Date().toTimeString().slice(0,8);
-}
-setInterval(updateClock, 1000);
-updateClock();
+// ══ CONFIG ══
+const SUBMIT_URL = 'https://mesbieto.app.n8n.cloud/webhook/maldoc-triage';
+const CASES_URL  = 'https://mesbieto.app.n8n.cloud/webhook/get-cases';
 
-// ── hardcoded config (analysts never see this) ──
-const CASES_ENDPOINT  = 'https://mesbieto.app.n8n.cloud/webhook/get-cases';
-const SUBMIT_ENDPOINT = 'https://mesbieto.app.n8n.cloud/webhook/maldoc-triage';
+// clock
+setInterval(() => { document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8); }, 1000);
 
-// ── tab switching ──
-function switchTab(tab, btn) {
+// tabs
+function showTab(t, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + tab).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + t).classList.add('active');
   btn.classList.add('active');
-  if (tab === 'dashboard') loadCases();
+  if (t === 'tracker') loadCases();
 }
 
-// ── Case ID generator ──
-let currentCaseId = '';
-
-function genCaseId() {
-  const hex = Array.from({length: 8}, () => Math.floor(Math.random() * 16).toString(16).toUpperCase()).join('');
-  return 'TRG-' + hex;
+// case id
+let caseId = '';
+function newCase() {
+  const h = Array.from({length:8}, () => Math.floor(Math.random()*16).toString(16).toUpperCase()).join('');
+  caseId = 'TRG-' + h;
+  document.getElementById('caseId').innerHTML = `<span>TRG</span>-${h}`;
 }
+newCase();
 
-function regenCase() {
-  currentCaseId = genCaseId();
-  const parts = currentCaseId.split('-');
-  document.getElementById('caseIdDisplay').innerHTML = `<span>TRG</span>-${parts[1]}`;
-}
+// file
+let file = null;
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('fileInput');
 
-regenCase();
-
-// ── override tracking ──
-const overrides = { threatType: false, priority: false };
-
-function markOverride(field) {
-  const val = document.getElementById(field).value;
-  const isDefault = (field === 'threatType' && val === 'unknown') ||
-                    (field === 'priority'   && val === 'medium');
-  overrides[field] = !isDefault;
-  const badge = document.getElementById(field + 'Badge');
-  if (overrides[field]) {
-    badge.textContent = 'MANUAL';
-    badge.classList.add('manual');
-  } else {
-    badge.textContent = 'AUTO';
-    badge.classList.remove('manual');
-  }
-}
-let selectedFile = null;
-
-const dropzone  = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-const fileRow   = document.getElementById('fileRow');
-
-function formatSize(b) {
+function fmt(b) {
   if (b < 1024) return b + ' B';
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
   return (b/1048576).toFixed(2) + ' MB';
 }
 
 function setFile(f) {
-  selectedFile = f;
+  file = f;
   const ext = f.name.split('.').pop().toUpperCase();
-  document.getElementById('fext').textContent = ext.length > 4 ? ext.slice(0,4) : ext;
+  document.getElementById('fext').textContent = ext.slice(0,4);
   document.getElementById('fname').textContent = f.name;
-  document.getElementById('fsize').textContent = formatSize(f.size);
-  fileRow.classList.add('show');
+  document.getElementById('fsize').textContent = fmt(f.size);
+  document.getElementById('fpreview').classList.add('show');
   document.getElementById('submitBtn').disabled = false;
 }
 
-fileInput.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
-dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('over'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
 document.getElementById('fremove').addEventListener('click', () => {
-  selectedFile = null; fileInput.value = '';
-  fileRow.classList.remove('show');
+  file = null; fi.value = '';
+  document.getElementById('fpreview').classList.remove('show');
   document.getElementById('submitBtn').disabled = true;
 });
 
-// ── logging ──
+// log
 function addLog(type, msg) {
   const ts = new Date().toTimeString().slice(0,8);
   const d = document.createElement('div');
   d.className = 'll';
   d.innerHTML = `<span class="lt">[${ts}]</span><span class="l${type}">${msg}</span>`;
-  const log = document.getElementById('logOut');
-  log.appendChild(d);
-  log.scrollTop = log.scrollHeight;
+  const el = document.getElementById('logbox');
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
 }
 
-// ── submit ──
-async function submitFile() {
-  if (!selectedFile) return;
-  const url = SUBMIT_ENDPOINT;
-
+// submit
+async function doSubmit() {
+  if (!file) return;
   document.getElementById('submitBtn').disabled = true;
-  document.getElementById('progWrap').classList.add('show');
-  document.getElementById('resultBox').classList.remove('show');
-  document.getElementById('analysisPanel').style.display = 'none';
-  document.getElementById('logOut').innerHTML = '';
-
-  const pb = document.getElementById('progBg');
-  pb.classList.add('spin');
+  document.getElementById('prog').classList.add('show');
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('logbox').innerHTML = '';
+  document.getElementById('progTrack').classList.add('spin');
   document.getElementById('progFill').style.width = '0%';
   document.getElementById('progPct').textContent = '...';
 
-  addLog('info', `case: ${currentCaseId}`);
-  addLog('info', `file: ${selectedFile.name} (${formatSize(selectedFile.size)})`);
-  addLog('ok', 'building payload...');
+  addLog('info', `Case: ${caseId}`);
+  addLog('info', `File: ${file.name} (${fmt(file.size)})`);
+  addLog('ok', 'Sending to analysis pipeline...');
+  document.getElementById('progLbl').textContent = 'Analyzing...';
 
   const fd = new FormData();
-  fd.append('file', selectedFile, selectedFile.name);
-  fd.append('caseId',               currentCaseId);
-  fd.append('analyst',              document.getElementById('analystName').value || 'anonymous');
-  fd.append('threatType',           document.getElementById('threatType').value);
-  fd.append('priority',             document.getElementById('priority').value);
-  fd.append('threatTypeOverride',   overrides.threatType ? 'true' : 'false');
-  fd.append('priorityOverride',     overrides.priority   ? 'true' : 'false');
-  fd.append('notes',                document.getElementById('notes').value);
-  fd.append('submittedAt',          new Date().toISOString());
-
-  addLog('ok', 'sending to n8n...');
-  document.getElementById('progLbl').textContent = 'Sending to n8n...';
+  fd.append('file',        file, file.name);
+  fd.append('caseId',      caseId);
+  fd.append('filename',    file.name);
+  fd.append('submittedAt', new Date().toISOString());
 
   try {
-    const res = await fetch(url, { method:'POST', body: fd });
-    pb.classList.remove('spin');
+    const res = await fetch(SUBMIT_URL, { method:'POST', body:fd });
+    document.getElementById('progTrack').classList.remove('spin');
     document.getElementById('progFill').style.width = '100%';
     document.getElementById('progPct').textContent = '100%';
-
     const txt = await res.text();
-    let pretty;
-    try { pretty = JSON.stringify(JSON.parse(txt), null, 2); } catch { pretty = txt; }
 
     if (res.ok) {
-      addLog('ok', `HTTP ${res.status} — analysis complete`);
-      document.getElementById('progLbl').textContent = 'Analysis complete';
-      let parsed = {};
-      try {
-        const clean = txt.trim().replace(/^\uFEFF/, '');
-        try {
-          parsed = JSON.parse(clean);
-        } catch(e1) {
-          const fixed = clean.replace(/\r\n/g, '\\n').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-          try {
-            parsed = JSON.parse(fixed);
-          } catch(e2) {
-            parsed = {
-              verdict:      (clean.match(/"verdict"\s*:\s*"([^"]+)"/)      ||[])[1] || 'unknown',
-              caseId:       (clean.match(/"caseId"\s*:\s*"([^"]+)"/)       ||[])[1] || '',
-              sha256:       (clean.match(/"sha256"\s*:\s*"([^"]+)"/)       ||[])[1] || '',
-              md5:          (clean.match(/"md5"\s*:\s*"([^"]+)"/)          ||[])[1] || '',
-              sha1:         (clean.match(/"sha1"\s*:\s*"([^"]+)"/)         ||[])[1] || '',
-              vtMalicious:  (clean.match(/"vtMalicious"\s*:\s*"([^"]+)"/)  ||[])[1] || '0',
-              vtSuspicious: (clean.match(/"vtSuspicious"\s*:\s*"([^"]+)"/) ||[])[1] || '0',
-              vtUndetected: (clean.match(/"vtUndetected"\s*:\s*"([^"]+)"/) ||[])[1] || '0',
-              vtTags:       (clean.match(/"vtTags"\s*:\s*"([^"]+)"/)       ||[])[1] || '',
-              filename:     (clean.match(/"filename"\s*:\s*"([^"]+)"/)     ||[])[1] || '',
-              mraptor:      (clean.match(/"mraptor"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*\})/)  ||[])[1] || '',
-              oleid:        (clean.match(/"oleid"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*\})/)    ||[])[1] || '',
-              olevba:       (clean.match(/"olevba"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*\})/)   ||[])[1] || '',
-            };
-            console.log('Used regex fallback:', parsed);
-          }
-        }
-        console.log('Response parsed:', parsed);
-        addLog('ok', `verdict: ${parsed.verdict || 'unknown'}`);
-        addLog('ok', `sha256: ${parsed.sha256 ? parsed.sha256.slice(0,16) + '...' : 'none'}`);
-      } catch(e) {
-        console.error('All parse attempts failed:', e);
-        addLog('err', 'parse failed — check console');
+      let d = {};
+      try { d = JSON.parse(txt); } catch {
+        try { d = JSON.parse(txt.replace(/\n/g,'\\n').replace(/\r/g,'\\r')); } catch {}
       }
-      renderResults(parsed);
-      regenCase();
+      addLog('ok', `Verdict: ${(d.final_verdict || d.verdict || 'unknown').toUpperCase()}`);
+      addLog('ok', `SHA256: ${d.sha256 ? d.sha256.slice(0,16)+'...' : 'n/a'}`);
+      document.getElementById('progLbl').textContent = 'Analysis complete';
+      renderResults(d);
+      newCase();
     } else {
-      addLog('err', `HTTP ${res.status}`);
-      document.getElementById('resultStatus').className = 'result-status err';
-      document.getElementById('resultStatus').textContent = `✕ ERROR HTTP ${res.status}`;
-      document.getElementById('resultBody').textContent = pretty || '(no body)';
-      document.getElementById('resultBox').classList.add('show');
+      addLog('err', `HTTP ${res.status} — check n8n workflow`);
+      document.getElementById('progLbl').textContent = 'Error';
     }
-  } catch(err) {
-    pb.classList.remove('spin');
-    addLog('err', err.message);
-    addLog('err', 'is n8n running? is the webhook URL correct?');
-    document.getElementById('resultStatus').className = 'result-status err';
-    document.getElementById('resultStatus').textContent = '✕ COULD NOT REACH N8N';
-    document.getElementById('resultBody').textContent = err.message + '\n\nCheck:\n1. n8n is running (n8n start)\n2. Webhook URL is correct\n3. Workflow is Active in n8n';
-    document.getElementById('resultBox').classList.add('show');
+  } catch(e) {
+    document.getElementById('progTrack').classList.remove('spin');
+    addLog('err', e.message);
+    addLog('err', 'Check: is n8n workflow Active?');
+    document.getElementById('progLbl').textContent = 'Failed';
   }
-
   document.getElementById('submitBtn').disabled = false;
 }
 
-// ── format oletools output ──
-function formatOleid(raw) {
-  if (!raw) return 'no data';
-  return raw.replace(/\\n/g, '\n').replace(/</g,'&lt;');
-}
-
-function formatOlevba(raw) {
-  if (!raw) return 'no data';
-  const restored = raw.replace(/\\n/g, '\n');
-  try {
-    const jsonStart = restored.indexOf('[');
-    if (jsonStart === -1) return restored.replace(/</g,'&lt;');
-    const jsonStr = restored.slice(jsonStart);
-    const data = JSON.parse(jsonStr);
-    const results = [];
-    for (const item of data) {
-      if (item.type === 'MetaInformation') continue;
-      if (item.type === 'error') {
-        results.push(`ERROR: ${item.message}`);
-        continue;
-      }
-      if (item.macros && item.macros.length > 0) {
-        results.push(`File: ${item.file}`);
-        results.push(`Type: ${item.type}`);
-        results.push(`Macros found: ${item.macros.length}`);
-        for (const m of item.macros) {
-          if (m.code && m.code !== 'file0') {
-            results.push(`\nMacro code:\n${m.code}`);
-          }
-        }
-        if (item.analysis && item.analysis.length > 0) {
-          results.push('\nSuspicious keywords:');
-          for (const a of item.analysis) {
-            results.push(`  [${a.type}] ${a.keyword} — ${a.description}`);
-          }
-        } else {
-          results.push('No suspicious keywords found.');
-        }
-      } else {
-        results.push(`File: ${item.file || '—'}`);
-        results.push(`Type: ${item.type || '—'}`);
-        results.push('No macros found.');
-      }
-    }
-    return results.join('\n').replace(/</g,'&lt;') || 'No macro content.';
-  } catch(e) {
-    return restored.replace(/</g,'&lt;');
-  }
-}
-
-// ── render analysis results ──
+// ══ RENDER RESULTS ══
 function renderResults(d) {
-  console.log('renderResults called with:', d);
+  // ── extract all fields ──
+  const verdict   = (d.final_verdict || d.verdict || 'unknown').toLowerCase();
+  const filename  = (d.filename && d.filename !== 'unknown') ? d.filename : (file ? file.name : '—');
+  const cid       = d.caseId || caseId;
 
-  const verdict  = (d.verdict || 'unknown').toLowerCase();
-  const vtMal    = parseInt(d.vtMalicious)  || 0;
-  const vtSusp   = parseInt(d.vtSuspicious) || 0;
-  const vtUnd    = parseInt(d.vtUndetected) || 0;
-  const vtTotal  = parseInt(d.vtTotal)      || (vtMal + vtSusp + vtUnd);
-  const vtScore  = vtTotal > 0 ? `${vtMal}/${vtTotal}` : `0/${vtUnd || '?'}`;
-  const filename = (d.filename && d.filename !== 'unknown') ? d.filename : (selectedFile ? selectedFile.name : '—');
-  const caseId   = d.caseId || currentCaseId || '—';
+  // VT
+  const vt        = d.vt || {};
+  const vtMal     = parseInt(vt.malicious   ?? d.vtMalicious   ?? 0);
+  const vtSusp    = parseInt(vt.suspicious  ?? d.vtSuspicious  ?? 0);
+  const vtUnd     = parseInt(vt.undetected  ?? d.vtUndetected  ?? 0);
+  const vtHarm    = parseInt(vt.harmless    ?? 0);
+  const vtTotal   = vt.total ?? (vtMal + vtSusp + vtUnd + vtHarm);
+  const vtStatus  = vt.status  ?? '—';
+  const vtName    = vt.threat_name ?? '';
+  const vtTags    = Array.isArray(vt.tags) ? vt.tags.join(', ') : (d.vtTags || '—');
+  const vtDets    = Array.isArray(vt.detections) ? vt.detections : [];
 
-  let vColor = '#2aff8f'; let vBorder = '#2aff8f';
-  if (verdict === 'malicious')  { vColor = '#e84242'; vBorder = '#e84242'; }
-  if (verdict === 'suspicious') { vColor = '#ffb830'; vBorder = '#ffb830'; }
-  if (verdict === 'pending')    { vColor = '#38b6ff'; vBorder = '#38b6ff'; }
+  // hashes
+  const sha256    = d.sha256 || '—';
+  const md5       = d.md5    || '—';
+  const sha1      = d.sha1   || '—';
+  const ftype     = d.file_type  || '—';
+  const ext       = d.extension  || '—';
+  const fsize     = d.filesize   ? fmt(d.filesize) : '—';
 
-  // parse mraptor verdict
-  let mraptorVerdict = 'clean';
-  let mraptorColor   = '#2aff8f';
-  const mr = (d.mraptor || '').toUpperCase();
-  if (mr.includes('MALICIOUS'))       { mraptorVerdict = 'MALICIOUS';      mraptorColor = '#e84242'; }
-  else if (mr.includes('SUSPICIOUS')) { mraptorVerdict = 'SUSPICIOUS';     mraptorColor = '#ffb830'; }
-  else if (mr.includes('MACRO OK'))   { mraptorVerdict = 'MACRO OK';       mraptorColor = '#2aff8f'; }
-  else if (mr.includes('ERROR'))      { mraptorVerdict = 'N/A (not OLE)';  mraptorColor = '#3d5568'; }
+  // oletools
+  const mraptor   = d.mraptor || {};
+  const oleid     = d.oleid   || {};
+  const olevba    = d.olevba  || {};
 
-  // parse oleid file format
-  const oleidMatch = (d.oleid || '').match(/File format\s+\|\s*([^\|]+)\|/);
-  const fileFormat = oleidMatch ? oleidMatch[1].trim() : 'unknown';
+  const mrVerdict = typeof mraptor === 'object' ? (mraptor.verdict || '—') : '—';
+  const mrRisk    = typeof mraptor === 'object' ? (mraptor.risk    || '—') : '—';
+  const mrFlags   = typeof mraptor === 'object' && Array.isArray(mraptor.flags) ? mraptor.flags.join(', ') : '—';
 
-  // parse oleid VBA macros
-  const macroMatch = (d.oleid || '').match(/VBA Macros\s+\|\s*([^\|]+)\|/);
-  const vbaMacros  = macroMatch ? macroMatch[1].trim() : 'unknown';
+  // oleid indicators table
+  const indicators = Array.isArray(oleid.indicators) ? oleid.indicators : [];
+  const getInd = name => {
+    const f = indicators.find(i => i.indicator && i.indicator.toLowerCase().includes(name.toLowerCase()));
+    return f ? { value: f.value, risk: f.risk } : { value: '—', risk: 'none' };
+  };
+  const indFileFormat   = getInd('file format');
+  const indContainer    = getInd('container');
+  const indEncrypted    = getInd('encrypted');
+  const indVBA          = getInd('vba macros');
+  const indXLM          = getInd('xlm');
+  const indExtRel       = getInd('external');
 
-  // parse oleid encrypted
-  const encMatch = (d.oleid || '').match(/Encrypted\s+\|\s*([^\|]+)\|/);
-  const encrypted = encMatch ? encMatch[1].trim() : 'unknown';
+  // olevba
+  const macros     = typeof olevba === 'object' ? (olevba.macros      || []) : [];
+  const suspicious = typeof olevba === 'object' ? (olevba.suspicious  || []) : [];
+  const autoexec   = typeof olevba === 'object' ? (olevba.autoexec    || []) : [];
+  const iocs       = typeof olevba === 'object' ? (olevba.iocs        || []) : [];
+  const analysis   = typeof olevba === 'object' ? (olevba.analysis    || []) : [];
+  const macroCount = typeof olevba === 'object' ? (olevba.macros_count || macros.length) : 0;
 
-  const panel = document.getElementById('analysisPanel');
+  // network IOCs
+  const netIOCs = Array.isArray(d.iocs) ? d.iocs : [];
+
+  // oleid raw
+  const oleidRaw = (typeof oleid === 'object' ? oleid.raw : '') || '';
+  const oleidClean = oleidRaw.replace(/\\n/g,'\n').replace(/\\t/g,'\t');
+
+  // verdict color
+  let vc = '#2aff8f';
+  if (verdict === 'malicious')  vc = '#e84242';
+  if (verdict === 'suspicious') vc = '#ffb830';
+  if (verdict === 'pending')    vc = '#38b6ff';
+  if (verdict === 'unknown')    vc = '#3d5568';
+
+  const riskColor = r => {
+    if (!r) return 'var(--muted)';
+    r = r.toLowerCase();
+    if (r === 'high')   return '#e84242';
+    if (r === 'medium') return '#ffb830';
+    if (r === 'low')    return '#ffb830';
+    if (r === 'none')   return '#2aff8f';
+    if (r === 'info')   return '#38b6ff';
+    return 'var(--muted)';
+  };
+
+  const panel = document.getElementById('results');
   panel.style.display = 'block';
   panel.innerHTML = `
-    <div class="sec-label" style="margin-top:0">analysis results</div>
 
-    <!-- verdict banner -->
-    <div style="background:#0d1117;border:1px solid ${vBorder};border-left:3px solid ${vBorder};padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
-      <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:${vColor}">${verdict.toUpperCase()}</div>
-      <div style="flex:1">
-        <div style="font-family:var(--mono);font-size:11px;color:#fff">${filename}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">Case: ${caseId}</div>
-      </div>
-      <div style="font-family:var(--mono);font-size:13px;color:${vColor};border:1px solid ${vBorder};padding:4px 12px">${vtScore} engines</div>
+  <!-- ── VERDICT BANNER ── -->
+  <div class="verdict-banner" style="border-color:${vc}">
+    <div class="v-label" style="color:${vc}">${verdict.toUpperCase()}</div>
+    <div style="flex:1">
+      <div class="v-file">${filename}</div>
+      <div class="v-case">Case: ${cid}${vtName ? ` &nbsp;·&nbsp; <span style="color:${vc}">${vtName}</span>` : ''}</div>
     </div>
+    <div class="v-score" style="color:${vc};border-color:${vc}">${vtMal}/${vtTotal} engines</div>
+  </div>
 
-    <!-- hashes + VT -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="card" style="padding:14px;margin-bottom:0">
-        <div class="sec-label" style="margin-top:0;font-size:9px">file hashes</div>
-        <div style="font-family:var(--mono);font-size:10px;line-height:2;color:var(--muted)">
-          <div><span style="color:var(--text)">MD5&nbsp;&nbsp;&nbsp;</span> ${d.md5 || '—'}</div>
-          <div><span style="color:var(--text)">SHA1&nbsp;&nbsp;</span> ${d.sha1 || '—'}</div>
-          <div style="word-break:break-all"><span style="color:var(--text)">SHA256</span> ${d.sha256 || '—'}</div>
-        </div>
-      </div>
-      <div class="card" style="padding:14px;margin-bottom:0">
-        <div class="sec-label" style="margin-top:0;font-size:9px">virustotal</div>
-        <div style="font-family:var(--mono);font-size:11px;line-height:2;color:var(--muted)">
-          <div><span style="color:#e84242">Malicious&nbsp;&nbsp;</span>${vtMal}</div>
-          <div><span style="color:#ffb830">Suspicious&nbsp;</span>${vtSusp}</div>
-          <div><span style="color:#2aff8f">Undetected&nbsp;</span>${vtUnd}</div>
-          <div><span style="color:var(--text)">Tags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>${d.vtTags || '—'}</div>
-          <div><span style="color:var(--text)">VT Status&nbsp;&nbsp;</span>${d.vtStatus || d.vt_status || '—'}</div>
-        </div>
-      </div>
-    </div>
+  <!-- ── FILE METADATA ── -->
+  <div class="slabel">file metadata</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="rtable">
+      <thead><tr><th>Property</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Filename</td><td>${filename}</td></tr>
+        <tr><td>File size</td><td>${fsize}</td></tr>
+        <tr><td>File type</td><td>${ftype}</td></tr>
+        <tr><td>Extension</td><td>.${ext}</td></tr>
+        <tr><td>MD5</td><td style="font-size:11px">${md5}</td></tr>
+        <tr><td>SHA1</td><td style="font-size:11px">${sha1}</td></tr>
+        <tr><td>SHA256</td><td style="font-size:11px">${sha256}</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-    <!-- oletools -->
-    <div class="card" style="padding:14px;margin-bottom:10px">
-      <div class="sec-label" style="margin-top:0;font-size:9px">oletools analysis</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Mraptor</div>
-          <div style="font-family:var(--mono);font-size:12px;color:${mraptorColor}">${mraptorVerdict}</div>
-        </div>
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">File format</div>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${fileFormat}</div>
-        </div>
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">VBA macros</div>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${vbaMacros}</div>
-        </div>
-        <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Encrypted</div>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${encrypted}</div>
-        </div>
-      </div>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Oleid raw output</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${formatOleid(d.oleid||'')}</div>
-    </div>
+  <!-- ── VIRUSTOTAL ── -->
+  <div class="slabel">virustotal analysis</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="rtable">
+      <thead><tr><th>Property</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Detection status</td><td style="color:${vc}">${vtMal > 0 ? vtMal + ' engines detected' : 'Not detected'}</td></tr>
+        <tr><td>Malicious</td><td style="color:#e84242">${vtMal}</td></tr>
+        <tr><td>Suspicious</td><td style="color:#ffb830">${vtSusp}</td></tr>
+        <tr><td>Undetected</td><td style="color:#2aff8f">${vtUnd}</td></tr>
+        <tr><td>Harmless</td><td>${vtHarm}</td></tr>
+        <tr><td>Total scanned</td><td>${vtTotal}</td></tr>
+        <tr><td>Tags</td><td>${vtTags}</td></tr>
+        <tr><td>VT status</td><td>${vtStatus}</td></tr>
+        ${vtName ? `<tr><td>Threat name</td><td style="color:${vc}">${vtName}</td></tr>` : ''}
+      </tbody>
+    </table>
+    ${vtDets.length > 0 ? `
+    <div class="section-title">AV Engine Detections</div>
+    <table class="rtable">
+      <thead><tr><th>Engine</th><th>Result</th><th>Category</th></tr></thead>
+      <tbody>
+        ${vtDets.map(det => `
+        <tr>
+          <td style="color:var(--text)">${det.engine}</td>
+          <td style="color:${det.category==='malicious'?'#e84242':'#ffb830'}">${det.result || '—'}</td>
+          <td><span style="color:${det.category==='malicious'?'#e84242':'#ffb830'}">${det.category}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : ''}
+  </div>
 
-    <!-- olevba -->
-    <div class="card" style="padding:14px;margin-bottom:0">
-      <div class="sec-label" style="margin-top:0;font-size:9px">olevba raw output</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre-wrap;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${formatOlevba(d.olevba||'')}</div>
-    </div>
+  <!-- ── OLEID ── -->
+  <div class="slabel">oleid indicators</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="rtable">
+      <thead><tr><th>Indicator</th><th>Value</th><th>Risk</th></tr></thead>
+      <tbody>
+        ${indicators.length > 0 ? indicators.map(ind => `
+        <tr>
+          <td>${ind.indicator}</td>
+          <td style="color:${riskColor(ind.risk)}">${ind.value}</td>
+          <td style="color:${riskColor(ind.risk)}">${ind.risk || '—'}</td>
+        </tr>`).join('') : `
+        <tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">No oleid indicators — file may not be an OLE document</td></tr>
+        `}
+      </tbody>
+    </table>
+    ${oleidClean ? `<div class="raw-box">${oleidClean.replace(/</g,'&lt;')}</div>` : ''}
+  </div>
+
+  <!-- ── MRAPTOR ── -->
+  <div class="slabel">mraptor — macro analysis</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="rtable">
+      <thead><tr><th>Property</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Verdict</td><td style="color:${mrVerdict==='malicious'?'#e84242':mrVerdict==='suspicious'?'#ffb830':mrVerdict==='macro_ok'?'#ffb830':'#2aff8f'}">${mrVerdict.toUpperCase()}</td></tr>
+        <tr><td>Risk level</td><td style="color:${riskColor(mrRisk)}">${mrRisk}</td></tr>
+        <tr><td>Flags</td><td>${mrFlags}</td></tr>
+        <tr><td>Macros found</td><td style="color:${macroCount>0?'#ffb830':'#2aff8f'}">${macroCount}</td></tr>
+        <tr><td>AutoExec triggers</td><td style="color:${autoexec.length>0?'#e84242':'#2aff8f'}">${autoexec.length}</td></tr>
+        <tr><td>Suspicious keywords</td><td style="color:${suspicious.length>0?'#e84242':'#2aff8f'}">${suspicious.length}</td></tr>
+        <tr><td>IOCs extracted</td><td style="color:${iocs.length>0?'#38b6ff':'var(--muted)'}"> ${iocs.length}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── OLEVBA KEYWORDS ── -->
+  ${analysis.length > 0 ? `
+  <div class="slabel">olevba — keyword analysis</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="section-title">All Keywords (${analysis.length})</div>
+    ${analysis.map(a => `
+    <div class="kw-item">
+      <span class="kw-type" style="color:${a.type==='Suspicious'?'#e84242':a.type==='AutoExec'?'#ffb830':a.type==='IOC'?'#38b6ff':'var(--muted)'}">${a.type}</span>
+      <span class="kw-keyword">${a.keyword}</span>
+      <span class="kw-desc">${a.description}</span>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <!-- ── MACRO CODE ── -->
+  ${macros.filter(m => m.code && m.code !== 'file0' && m.code.length > 5).length > 0 ? `
+  <div class="slabel">extracted macro code</div>
+  ${macros.filter(m => m.code && m.code !== 'file0' && m.code.length > 5).map((m, i) => `
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="section-title">Macro ${i+1} — ${m.filename || 'unknown stream'}</div>
+    <div class="raw-box">${m.code.slice(0,1000).replace(/</g,'&lt;')}${m.code.length > 1000 ? '\n\n... (truncated at 1000 chars)' : ''}</div>
+  </div>`).join('')}` : ''}
+
+  <!-- ── NETWORK IOCs ── -->
+  ${netIOCs.length > 0 ? `
+  <div class="slabel">network iocs</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="rtable">
+      <thead><tr><th>Type</th><th>Value</th></tr></thead>
+      <tbody>
+        ${netIOCs.map(ioc => `
+        <tr>
+          <td style="color:#38b6ff">${ioc.type}</td>
+          <td style="color:#fff">${ioc.value}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
   `;
 
-  panel.scrollIntoView({ behavior: 'smooth' });
+  panel.scrollIntoView({ behavior:'smooth' });
 }
 
-// ── dashboard / case loader ──
-let casesData = [];
-
+// ══ CASE TRACKER ══
 async function loadCases() {
-  const endpoint = CASES_ENDPOINT;
-  const btn = document.getElementById('refreshBtn');
-  btn.classList.add('spinning');
   try {
-    const res = await fetch(endpoint, { signal: AbortSignal.timeout(8000) });
+    const res  = await fetch(CASES_URL, { signal: AbortSignal.timeout(8000) });
     const data = await res.json();
-    casesData = Array.isArray(data) ? data : (data.data || data.rows || data.values || []);
-    renderCases(casesData);
-  } catch(err) {
+    const cases = Array.isArray(data) ? data : (data.data || data.rows || []);
+    const mal   = cases.filter(c => (c.verdict||c.Verdict||'').toLowerCase().includes('malicious')).length;
+    const clean = cases.filter(c => (c.verdict||c.Verdict||'').toLowerCase().includes('clean')).length;
+    const pend  = cases.filter(c => { const v=(c.verdict||c.Verdict||'').toLowerCase(); return !v||v==='pending'; }).length;
+    document.getElementById('sTotal').textContent = cases.length;
+    document.getElementById('sMal').textContent   = mal;
+    document.getElementById('sClean').textContent = clean;
+    document.getElementById('sPend').textContent  = pend;
+    if (cases.length === 0) {
+      document.getElementById('caseBody').innerHTML = `<tr><td colspan="6"><div class="empty">No cases yet.</div></td></tr>`;
+      return;
+    }
+    document.getElementById('caseBody').innerHTML = cases.map(c => {
+      const verdict = (c.verdict||c.Verdict||'pending').toLowerCase();
+      let vClass = 'pending';
+      if (verdict.includes('malicious'))  vClass = 'malicious';
+      else if (verdict.includes('clean')) vClass = 'clean';
+      else if (verdict.includes('suspicious')) vClass = 'suspicious';
+      const ts = (c.timestamp||c.Timestamp||'—').slice(0,16).replace('T',' ');
+      return `<tr>
+        <td style="color:#fff">${c.caseId||c.CaseID||'—'}</td>
+        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.filename||c.Filename||'—'}</td>
+        <td style="color:var(--muted)">${ts}</td>
+        <td><span class="badge ${vClass}">${verdict}</span></td>
+        <td>${c.vtScore||c.VTScore||'—'}</td>
+        <td>${c.fileType||c.file_type||'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
     document.getElementById('caseBody').innerHTML =
-      `<tr><td colspan="7"><div class="empty-state" style="color:var(--accent)">Could not reach pipeline.<br><span style="color:var(--muted)">Make sure n8n is running and the get-cases workflow is active.</span></div></td></tr>`;
-    document.getElementById('dashCount').textContent = 'connection error';
+      `<tr><td colspan="6"><div class="empty" style="color:var(--accent)">Could not load cases.<br>Make sure the get-cases n8n workflow is active.</div></td></tr>`;
   }
-  btn.classList.remove('spinning');
 }
-
-function renderCases(cases) {
-  const tbody = document.getElementById('caseBody');
-  document.getElementById('dashCount').textContent = cases.length + ' case' + (cases.length !== 1 ? 's' : '') + ' loaded';
-
-  // stats
-  const mal = cases.filter(c => (c.Verdict || c.verdict || '').toLowerCase().includes('malicious')).length;
-  const cln = cases.filter(c => (c.Verdict || c.verdict || '').toLowerCase().includes('clean')).length;
-  const pen = cases.filter(c => {
-    const v = (c.Verdict || c.verdict || '').toLowerCase();
-    return !v || v === 'pending' || v === '';
-  }).length;
-
-  document.getElementById('statTotal').textContent    = cases.length;
-  document.getElementById('statMalicious').textContent = mal;
-  document.getElementById('statClean').textContent     = cln;
-  document.getElementById('statPending').textContent   = pen;
-
-  if (cases.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No cases found in your Google Sheet.<br>Make sure the sheet has data and column headers match.</div></td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = cases.map((c, i) => {
-    const caseId    = c.CaseID      || c.caseId      || c['Case ID']    || '—';
-    const filename  = c.Filename    || c.filename     || c['File Name']  || '—';
-    const analyst   = c.Analyst     || c.analyst      || '—';
-    const ts        = c.Timestamp   || c.timestamp    || c['Submitted At'] || '—';
-    const verdict   = (c.Verdict    || c.verdict      || 'pending').toLowerCase();
-    const vtScore   = c.VTScore     || c['VT Score']  || c.vtScore       || '';
-    const hasYara   = !!(c.YARARule  || c.yaraRule    || c['YARA Rule']);
-    const hasSigma  = !!(c.SigmaRule || c.sigmaRule   || c['Sigma Rule']);
-    const threatType       = c.ThreatType        || c.threatType        || c['Threat Type']       || '—';
-    const priority         = c.Priority          || c.priority          || '—';
-    const threatTypeSource = c.ThreatTypeSource  || c.threatTypeSource  || 'auto';
-    const prioritySource   = c.PrioritySource    || c.prioritySource    || 'auto';
-
-    const vtNum = parseInt(vtScore) || 0;
-    const vtPct = Math.min(vtNum, 100);
-
-    let vClass = 'pending';
-    if (verdict.includes('malicious')) vClass = 'malicious';
-    else if (verdict.includes('clean')) vClass = 'clean';
-    else if (verdict.includes('suspicious')) vClass = 'suspicious';
-
-    let pClass = '';
-    if (priority === 'critical') pClass = 'color:var(--accent)';
-    else if (priority === 'high') pClass = 'color:var(--amber)';
-    else if (priority === 'low') pClass = 'color:var(--green)';
-
-    const idParts = caseId.split('-');
-    const idDisplay = idParts.length >= 2
-      ? `<span>TRG</span>-${idParts.slice(1).join('-')}`
-      : caseId;
-
-    const shortTs = ts.length > 16 ? ts.slice(0,16).replace('T',' ') : ts;
-
-    const ttBadge = threatTypeSource === 'manual'
-      ? `<span style="font-size:9px;padding:1px 5px;border:1px solid #ffb830;color:#ffb830;margin-left:5px">MANUAL</span>`
-      : `<span style="font-size:9px;padding:1px 5px;border:1px solid #38b6ff;color:#38b6ff;margin-left:5px">AUTO</span>`;
-    const prBadge = prioritySource === 'manual'
-      ? `<span style="font-size:9px;padding:1px 5px;border:1px solid #ffb830;color:#ffb830;margin-left:5px">MANUAL</span>`
-      : `<span style="font-size:9px;padding:1px 5px;border:1px solid #38b6ff;color:#38b6ff;margin-left:5px">AUTO</span>`;
-
-    return `<tr onclick="openCase(${i})">
-      <td class="case-id-cell">${idDisplay}</td>
-      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${filename}</td>
-      <td>${analyst}</td>
-      <td style="color:var(--muted)">${shortTs}</td>
-      <td><span class="verdict-badge ${vClass}">${verdict}</span></td>
-      <td style="white-space:nowrap">${threatType}${ttBadge}</td>
-      <td style="white-space:nowrap;${pClass}">${priority}${prBadge}</td>
-      <td>
-        <div class="vt-score">
-          <span style="min-width:28px">${vtScore || '—'}</span>
-          ${vtScore ? `<div class="vt-bar-bg"><div class="vt-bar-fill" style="width:${vtPct}%"></div></div>` : ''}
-        </div>
-      </td>
-      <td>
-        <div class="rule-chips">
-          <span class="rule-chip ${hasYara ? 'has' : ''}">YARA</span>
-          <span class="rule-chip ${hasSigma ? 'has' : ''}">SIGMA</span>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function openCase(i) {
-  const c = casesData[i];
-  if (!c) return;
-
-  const caseId  = c.CaseID   || c.caseId   || '—';
-  const verdict = c.Verdict  || c.verdict  || 'pending';
-  document.getElementById('modalTitle').textContent = caseId;
-
-  const yara  = c.YARARule  || c.yaraRule  || c['YARA Rule']  || '(not generated yet)';
-  const sigma = c.SigmaRule || c.sigmaRule || c['Sigma Rule'] || '(not generated yet)';
-  const iocs  = c.IOCs      || c.iocs      || c['IOC Report'] || '(not available yet)';
-  const notes = c.Notes     || c.notes     || '—';
-
-  let vClass = 'pending';
-  if (verdict.toLowerCase().includes('malicious')) vClass = 'malicious';
-  else if (verdict.toLowerCase().includes('clean')) vClass = 'clean';
-  else if (verdict.toLowerCase().includes('suspicious')) vClass = 'suspicious';
-
-  document.getElementById('modalBody').innerHTML = `
-    <div class="modal-row"><div class="modal-row-label">Filename</div><div class="modal-row-val">${c.Filename || c.filename || '—'}</div></div>
-    <div class="modal-row"><div class="modal-row-label">Analyst</div><div class="modal-row-val">${c.Analyst || c.analyst || '—'}</div></div>
-    <div class="modal-row"><div class="modal-row-label">Submitted</div><div class="modal-row-val">${c.Timestamp || c.timestamp || '—'}</div></div>
-    <div class="modal-row"><div class="modal-row-label">Verdict</div><div class="modal-row-val"><span class="verdict-badge ${vClass}">${verdict}</span></div></div>
-    <div class="modal-row"><div class="modal-row-label">Threat type</div><div class="modal-row-val">${c.ThreatType || c.threatType || '—'} <span style="font-size:10px;padding:1px 6px;border:1px solid ${(c.ThreatTypeSource||'auto')==='manual'?'#ffb830':'#38b6ff'};color:${(c.ThreatTypeSource||'auto')==='manual'?'#ffb830':'#38b6ff'}">${(c.ThreatTypeSource||'auto').toUpperCase()}</span></div></div>
-    <div class="modal-row"><div class="modal-row-label">Priority</div><div class="modal-row-val">${c.Priority || c.priority || '—'} <span style="font-size:10px;padding:1px 6px;border:1px solid ${(c.PrioritySource||'auto')==='manual'?'#ffb830':'#38b6ff'};color:${(c.PrioritySource||'auto')==='manual'?'#ffb830':'#38b6ff'}">${(c.PrioritySource||'auto').toUpperCase()}</span></div></div>
-    <div class="modal-row"><div class="modal-row-label">VT Score</div><div class="modal-row-val">${c.VTScore || c['VT Score'] || '—'}</div></div>
-    <div class="modal-row"><div class="modal-row-label">IOC Report</div><div class="modal-row-val code">${iocs}</div></div>
-    <div class="modal-row"><div class="modal-row-label">YARA Rule</div><div class="modal-row-val code">${yara}</div></div>
-    <div class="modal-row"><div class="modal-row-label">Sigma Rule</div><div class="modal-row-val code">${sigma}</div></div>
-    <div class="modal-row"><div class="modal-row-label">Notes</div><div class="modal-row-val">${notes}</div></div>
-  `;
-  document.getElementById('modalOverlay').classList.add('show');
-}
-
-function closeModal(e) { if (e.target === document.getElementById('modalOverlay')) closeModalDirect(); }
-function closeModalDirect() { document.getElementById('modalOverlay').classList.remove('show'); }
 </script>
 </body>
 </html>
