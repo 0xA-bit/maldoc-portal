@@ -599,8 +599,8 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ── hardcoded config (analysts never see this) ──
-  const CASES_ENDPOINT  = 'https://mesbieto.app.n8n.cloud/webhook/get-cases';
-  const SUBMIT_ENDPOINT = 'https://mesbieto.app.n8n.cloud/webhook/maldoc-triage';
+const CASES_ENDPOINT  = 'https://mesbieto.app.n8n.cloud/webhook/get-cases';
+const SUBMIT_ENDPOINT = 'https://mesbieto.app.n8n.cloud/webhook/maldoc-triage';
 
 // ── tab switching ──
 function switchTab(tab, btn) {
@@ -760,33 +760,42 @@ async function submitFile() {
 
 // ── render analysis results ──
 function renderResults(d) {
-  const verdict = (d.verdict || 'unknown').toLowerCase();
-  const vtMal   = parseInt(d.vtMalicious)  || 0;
-  const vtSusp  = parseInt(d.vtSuspicious) || 0;
-  const vtUnd   = parseInt(d.vtUndetected) || 0;
-  const vtTotal = parseInt(d.vtTotal)      || (vtMal + vtSusp + vtUnd);
-  const vtScore = vtTotal > 0 ? `${vtMal}/${vtTotal}` : '0/0';
+  console.log('renderResults called with:', d);
+
+  const verdict  = (d.verdict || 'unknown').toLowerCase();
+  const vtMal    = parseInt(d.vtMalicious)  || 0;
+  const vtSusp   = parseInt(d.vtSuspicious) || 0;
+  const vtUnd    = parseInt(d.vtUndetected) || 0;
+  const vtTotal  = parseInt(d.vtTotal)      || (vtMal + vtSusp + vtUnd);
+  const vtScore  = vtTotal > 0 ? `${vtMal}/${vtTotal}` : `0/${vtUnd || '?'}`;
+  const filename = (d.filename && d.filename !== 'unknown') ? d.filename : (selectedFile ? selectedFile.name : '—');
+  const caseId   = d.caseId || currentCaseId || '—';
 
   let vColor = '#2aff8f'; let vBorder = '#2aff8f';
   if (verdict === 'malicious')  { vColor = '#e84242'; vBorder = '#e84242'; }
   if (verdict === 'suspicious') { vColor = '#ffb830'; vBorder = '#ffb830'; }
+  if (verdict === 'pending')    { vColor = '#38b6ff'; vBorder = '#38b6ff'; }
 
   // parse mraptor verdict
   let mraptorVerdict = 'clean';
   let mraptorColor   = '#2aff8f';
   const mr = (d.mraptor || '').toUpperCase();
-  if (mr.includes('MALICIOUS'))  { mraptorVerdict = 'MALICIOUS';  mraptorColor = '#e84242'; }
-  else if (mr.includes('SUSPICIOUS')) { mraptorVerdict = 'SUSPICIOUS'; mraptorColor = '#ffb830'; }
-  else if (mr.includes('ERROR'))      { mraptorVerdict = 'N/A (not OLE)'; mraptorColor = '#3d5568'; }
-  else if (mr.includes('NOT SUSPICIOUS')) { mraptorVerdict = 'NOT SUSPICIOUS'; }
+  if (mr.includes('MALICIOUS'))       { mraptorVerdict = 'MALICIOUS';      mraptorColor = '#e84242'; }
+  else if (mr.includes('SUSPICIOUS')) { mraptorVerdict = 'SUSPICIOUS';     mraptorColor = '#ffb830'; }
+  else if (mr.includes('MACRO OK'))   { mraptorVerdict = 'MACRO OK';       mraptorColor = '#2aff8f'; }
+  else if (mr.includes('ERROR'))      { mraptorVerdict = 'N/A (not OLE)';  mraptorColor = '#3d5568'; }
 
   // parse oleid file format
   const oleidMatch = (d.oleid || '').match(/File format\s+\|\s*([^\|]+)\|/);
   const fileFormat = oleidMatch ? oleidMatch[1].trim() : 'unknown';
 
-  // parse oleid macros
+  // parse oleid VBA macros
   const macroMatch = (d.oleid || '').match(/VBA Macros\s+\|\s*([^\|]+)\|/);
   const vbaMacros  = macroMatch ? macroMatch[1].trim() : 'unknown';
+
+  // parse oleid encrypted
+  const encMatch = (d.oleid || '').match(/Encrypted\s+\|\s*([^\|]+)\|/);
+  const encrypted = encMatch ? encMatch[1].trim() : 'unknown';
 
   const panel = document.getElementById('analysisPanel');
   panel.style.display = 'block';
@@ -797,8 +806,8 @@ function renderResults(d) {
     <div style="background:#0d1117;border:1px solid ${vBorder};border-left:3px solid ${vBorder};padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
       <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:${vColor}">${verdict.toUpperCase()}</div>
       <div style="flex:1">
-        <div style="font-family:var(--mono);font-size:11px;color:#fff">${d.filename || '—'}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">Case: ${d.caseId || '—'}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:#fff">${filename}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">Case: ${caseId}</div>
       </div>
       <div style="font-family:var(--mono);font-size:13px;color:${vColor};border:1px solid ${vBorder};padding:4px 12px">${vtScore} engines</div>
     </div>
@@ -820,6 +829,7 @@ function renderResults(d) {
           <div><span style="color:#ffb830">Suspicious&nbsp;</span>${vtSusp}</div>
           <div><span style="color:#2aff8f">Undetected&nbsp;</span>${vtUnd}</div>
           <div><span style="color:var(--text)">Tags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>${d.vtTags || '—'}</div>
+          <div><span style="color:var(--text)">VT Status&nbsp;&nbsp;</span>${d.vtStatus || d.vt_status || '—'}</div>
         </div>
       </div>
     </div>
@@ -827,7 +837,7 @@ function renderResults(d) {
     <!-- oletools -->
     <div class="card" style="padding:14px;margin-bottom:10px">
       <div class="sec-label" style="margin-top:0;font-size:9px">oletools analysis</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Mraptor</div>
           <div style="font-family:var(--mono);font-size:12px;color:${mraptorColor}">${mraptorVerdict}</div>
@@ -840,9 +850,13 @@ function renderResults(d) {
           <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">VBA macros</div>
           <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${vbaMacros}</div>
         </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Encrypted</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${encrypted}</div>
+        </div>
       </div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Oleid raw output</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre;overflow-x:auto;max-height:160px;overflow-y:auto;line-height:1.6">${(d.oleid||'no data').replace(/</g,'&lt;')}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:10px;white-space:pre;overflow-x:auto;max-height:200px;overflow-y:auto;line-height:1.6">${(d.oleid||'no data').replace(/</g,'&lt;')}</div>
     </div>
 
     <!-- olevba -->
@@ -852,7 +866,6 @@ function renderResults(d) {
     </div>
   `;
 
-  // scroll to results
   panel.scrollIntoView({ behavior: 'smooth' });
 }
 
